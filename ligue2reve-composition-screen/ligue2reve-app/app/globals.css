@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background-color: theme("colors.chalk");
+  color: theme("colors.ink");
+}
+
+.pitch-stripes {
+  background-image: repeating-linear-gradient(
+    to right,
+    theme("colors.pitch.DEFAULT") 0%,
+    theme("colors.pitch.DEFAULT") 12.5%,
+    theme("colors.pitch.light") 12.5%,
+    theme("colors.pitch.light") 25%
+  );
+}
+
+.slot-select {
+  appearance: none;
+  -webkit-appearance: none;
+}
