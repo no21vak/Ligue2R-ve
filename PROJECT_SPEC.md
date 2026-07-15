@@ -64,19 +64,54 @@ mode enchères/budget. Ligue 2 Rêve s'en différencie par la contrainte "un jou
 club" (mécanique de pronostic tactique, pas de gestion budgétaire). Objectif : jeu fun
 entre connaisseurs, pas concurrence frontale.
 
-## Modèle de données (résumé)
+## Modèle de données — statut : CRÉÉ ✅
 
-Tables principales : `USERS`, `LEAGUES`, `LEAGUE_MEMBERS`, `PLAYERS`, `PLAYER_POSITIONS`,
-`GAMEWEEKS`, `LINEUPS`, `LINEUP_SLOTS`, `PLAYER_GAMEWEEK_STATS`.
-(Schéma détaillé discuté et validé en conversation — voir historique ou redemander
-à Claude de le régénérer à partir de cette liste si besoin.)
+Tables en place dans Supabase : `CLUBS` (ajoutée en cours de route, absente de la
+liste initiale mais nécessaire), `USERS`, `LEAGUES`, `LEAGUE_MEMBERS`, `PLAYERS`,
+`PLAYER_POSITIONS`, `GAMEWEEKS`, `LINEUPS`, `LINEUP_SLOTS`, `PLAYER_GAMEWEEK_STATS`.
+
+Décisions structurantes prises :
+- Contrainte **"un seul joueur par club" par composition** imposée en base (`UNIQUE (lineup_id, club_id)`
+  sur `LINEUP_SLOTS`), avec un trigger qui synchronise automatiquement `club_id` à partir du
+  joueur choisi — aucune vérification manuelle à faire côté code.
+- `PLAYERS` a une colonne `jersey_number` (ajoutée après coup, nullable — un numéro de
+  maillot inconnu n'est jamais bloquant).
+- `PLAYER_GAMEWEEK_STATS` reste volontairement générique (buts, passes, cartons, note...)
+  pour absorber n'importe quel barème de scoring futur sans revoir le schéma.
+
+Fichiers de migration (dossier `supabase/migrations/`, à exécuter dans l'ordre) :
+1. `0001_init_schema.sql` — schéma initial (9 tables + trigger)
+2. `0002_add_jersey_number.sql` — ajout colonne numéro de maillot
+3. `0003_seed_dijon_sochaux.sql` — Dijon FCO + FC Sochaux
+4. `0004_seed_nantes_metz.sql` — FC Nantes + FC Metz
+5. `0005_seed_asse_reims.sql` — AS Saint-Étienne + Stade de Reims (+ ajout Killian Corredor à Nantes)
+6. `0006_seed_mhsc_rodez_pau_clermont.sql` — Montpellier HSC + Rodez AF + Pau FC + Clermont Foot 63
+7. `0007_seed_redstar_grenoble_dunkerque_guingamp.sql` — Red Star FC + Grenoble Foot 38 + USL Dunkerque + EA Guingamp
+8. `0008_seed_nancy_boulogne_laval_annecy.sql` — AS Nancy Lorraine + US Boulogne + Stade Lavallois + FC Annecy
+
+## Effectifs — statut : LES 18 CLUBS SONT SAISIS ✅
+
+Méthode retenue : collecte des effectifs sur **Transfermarkt** (captures d'écran fournies
+par l'utilisateur — le site bloque l'accès automatisé de Claude), relecture et correction
+manuelle systématique par l'utilisateur avant insertion (joueurs partis/prêtés exclus,
+postes ajustés, fautes d'orthographe corrigées). Cette relecture humaine reste indispensable
+à chaque nouvelle saison / fenêtre de mercato.
+
+Les 18 clubs Ligue 2 BKT 2026-2027 sont en base : Dijon FCO, FC Sochaux-Montbéliard,
+FC Nantes, FC Metz, AS Saint-Étienne, Stade de Reims, Montpellier HSC, Rodez AF, Pau FC,
+Clermont Foot 63, Red Star FC, Grenoble Foot 38, USL Dunkerque, EA Guingamp,
+AS Nancy Lorraine, US Boulogne, Stade Lavallois, FC Annecy.
+
+**Point de vigilance identifié** : certains clubs comptent des homonymes (deux joueurs
+avec le même nom de famille, ex. Hachem à Red Star, Koné à Boulogne) — à traiter au cas
+par cas dans les scripts SQL futurs (jointure sur prénom + nom, pas seulement le nom).
 
 ## Roadmap
 
 **V1 (objectif : jouable entre amis)**
-- [ ] Schéma Supabase créé à partir du modèle ci-dessus
-- [ ] Saisie manuelle des 18 clubs + effectifs (poste principal uniquement)
-- [ ] Écran de composition d'équipe (formation + sélection contrainte 1/club)
+- [x] Schéma Supabase créé à partir du modèle ci-dessus
+- [x] Saisie manuelle des 18 clubs + effectifs (poste principal uniquement)
+- [ ] Écran de composition d'équipe (formation + sélection contrainte 1/club) ← **prochaine étape**
 - [ ] Barème de scoring V1 simple
 - [ ] Classement hebdo + saison (une seule ligue)
 - [ ] Déploiement Vercel + premier test réel avec les amis
@@ -94,6 +129,15 @@ Tables principales : `USERS`, `LEAGUES`, `LEAGUE_MEMBERS`, `PLAYERS`, `PLAYER_PO
 - Pour un bug : coller le fichier complet concerné + message d'erreur exact + comportement attendu
 - Après chaque fonctionnalité qui marche : commit GitHub → déploiement auto Vercel
 - Mettre à jour ce fichier après toute décision structurante (scoring, schéma, scope)
+- **Continuité entre conversations** : Claude n'a pas de mémoire automatique d'une conversation
+  à l'autre (sauf activation du Projet Claude.ai avec fichiers uploadés). Le réflexe fiable :
+  redonner le lien du repo GitHub en début de conversation — Claude le clone et relit ce
+  fichier + les migrations déjà exécutées pour se remettre à jour.
+- **Collecte d'effectifs** : Transfermarkt est la référence, mais Claude ne peut pas y accéder
+  seul (site protégé contre l'accès automatisé) → l'utilisateur fournit des captures d'écran,
+  Claude construit le tableau, l'utilisateur corrige (départs, prêts, postes, orthographe),
+  puis Claude génère le SQL. Attention aux homonymes (même nom de famille, poste différent)
+  dans les scripts d'insertion.
 
 ---
-*Dernière mise à jour : à compléter au fil du projet*
+*Dernière mise à jour : 15 juillet 2026 — schéma + 18 effectifs Ligue 2 2026-2027 en base, prêt pour l'écran de composition d'équipe*
