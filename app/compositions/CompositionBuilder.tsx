@@ -8,6 +8,7 @@ import {
   FORMATIONS,
 } from "@/lib/formations";
 import { saveLineup } from "./actions";
+import PlayerCombobox from "./PlayerCombobox";
 import type { Club, ExistingLineup, PlayerRow, Position, SlotState } from "@/lib/types";
 
 interface Props {
@@ -102,8 +103,7 @@ export default function CompositionBuilder({
     setFeedback(null);
   }
 
-  function handleSlotChange(slotId: string, playerIdRaw: string) {
-    const playerId = playerIdRaw ? Number(playerIdRaw) : null;
+  function handleSlotChange(slotId: string, playerId: number | null) {
     setSlots((prev) => prev.map((s) => (s.id === slotId ? { ...s, playerId } : s)));
     setFeedback(null);
   }
@@ -117,14 +117,6 @@ export default function CompositionBuilder({
         const clubB = clubById.get(b.club_id)?.name ?? "";
         return clubA.localeCompare(clubB) || a.last_name.localeCompare(b.last_name);
       });
-  }
-
-  function slotLabel(slot: SlotState) {
-    if (!slot.playerId) return "";
-    const p = playerById.get(slot.playerId);
-    if (!p) return "";
-    const club = clubById.get(p.club_id);
-    return `${club?.short_name ?? club?.name ?? "?"} · ${p.last_name}`;
   }
 
   function handleSave() {
@@ -191,23 +183,14 @@ export default function CompositionBuilder({
               <span className="rounded-full bg-ink/60 px-2 py-0.5 text-[10px] font-semibold text-chalk">
                 {POSITION_LABEL[slot.position]}
               </span>
-              <select
-                value={slot.playerId ?? ""}
-                onChange={(e) => handleSlotChange(slot.id, e.target.value)}
-                className={`slot-select w-28 truncate rounded-full border-2 px-2 py-1 text-center text-xs font-semibold shadow ${
-                  slot.playerId
-                    ? "border-gold bg-white text-ink"
-                    : "border-white/70 bg-white/90 text-ink/50"
-                }`}
-              >
-                <option value="">— {POSITION_LABEL[slot.position]} —</option>
-                {availablePlayersFor(slot).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {clubById.get(p.club_id)?.short_name ?? clubById.get(p.club_id)?.name} ·{" "}
-                    {p.last_name}
-                  </option>
-                ))}
-              </select>
+              <PlayerCombobox
+                players={availablePlayersFor(slot)}
+                clubById={clubById}
+                value={slot.playerId}
+                onChange={(playerId) => handleSlotChange(slot.id, playerId)}
+                placeholder={`— ${POSITION_LABEL[slot.position]} —`}
+                variant="pitch"
+              />
             </div>
           ))}
         </div>
@@ -223,21 +206,14 @@ export default function CompositionBuilder({
                 <span className="rounded-full bg-pitch/10 px-2 py-0.5 text-[10px] font-semibold text-pitch-dark">
                   {POSITION_LABEL[slot.position]}
                 </span>
-                <select
-                  value={slot.playerId ?? ""}
-                  onChange={(e) => handleSlotChange(slot.id, e.target.value)}
-                  className={`w-full truncate rounded-lg border px-2 py-2 text-center text-xs font-medium ${
-                    slot.playerId ? "border-pitch/40 bg-white" : "border-ink/15 bg-white text-ink/50"
-                  }`}
-                >
-                  <option value="">—</option>
-                  {availablePlayersFor(slot).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {clubById.get(p.club_id)?.short_name ?? clubById.get(p.club_id)?.name} ·{" "}
-                      {p.last_name}
-                    </option>
-                  ))}
-                </select>
+                <PlayerCombobox
+                  players={availablePlayersFor(slot)}
+                  clubById={clubById}
+                  value={slot.playerId}
+                  onChange={(playerId) => handleSlotChange(slot.id, playerId)}
+                  placeholder="—"
+                  variant="bench"
+                />
               </div>
             ))}
           </div>
