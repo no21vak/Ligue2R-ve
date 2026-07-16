@@ -33,9 +33,9 @@ export default async function CompositionsPage() {
 
   const { data: gameweek } = await supabase
     .from("gameweeks")
-    .select("id, number, season, status")
-    .eq("status", "open")
-    .order("number", { ascending: true })
+    .select("id, number, season, status, lock_at")
+    .in("status", ["open", "locked"])
+    .order("number", { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -44,6 +44,10 @@ export default async function CompositionsPage() {
       <EmptyState message="Aucune journée n'est ouverte à la composition pour le moment. Reviens un peu plus tard." />
     );
   }
+
+  const isLocked =
+    gameweek.status !== "open" ||
+    (gameweek.lock_at !== null && new Date(gameweek.lock_at) <= new Date());
 
   const [{ data: clubs }, { data: playerRows }, { data: lineup }] = await Promise.all([
     supabase.from("clubs").select("id, name, short_name, logo_url").order("name"),
@@ -88,6 +92,8 @@ export default async function CompositionsPage() {
       players={players}
       existingLineup={existingLineup}
       username={profile.username}
+      isLocked={isLocked}
+      lockAt={gameweek.lock_at}
     />
   );
 }

@@ -10,6 +10,7 @@ interface Props {
   onChange: (playerId: number | null) => void;
   placeholder: string;
   variant: "pitch" | "bench";
+  disabled?: boolean;
 }
 
 function normalize(s: string) {
@@ -32,6 +33,7 @@ export default function PlayerCombobox({
   onChange,
   placeholder,
   variant,
+  disabled = false,
 }: Props) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -81,23 +83,24 @@ export default function PlayerCombobox({
           isPitch
             ? `w-32 px-2 py-1 ${value ? "border-gold bg-white" : "border-white/70 bg-white/90"}`
             : `w-full rounded-lg border px-2 py-2 ${value ? "border-pitch/40 bg-white" : "border-ink/15 bg-white"}`
-        }`}
+        } ${disabled ? "opacity-70" : ""}`}
       >
         <input
           ref={inputRef}
           value={displayValue}
+          disabled={disabled}
           onChange={(e) => {
             setQuery(e.target.value);
             setIsOpen(true);
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => !disabled && setIsOpen(true)}
           onBlur={() => setTimeout(() => setIsOpen(false), 150)}
           placeholder={placeholder}
-          className={`w-full truncate bg-transparent text-center outline-none ${
+          className={`w-full truncate bg-transparent text-center outline-none disabled:cursor-not-allowed ${
             isPitch ? "text-xs font-semibold text-ink" : "text-xs font-medium text-ink"
           }`}
         />
-        {value && (
+        {value && !disabled && (
           <button
             type="button"
             onMouseDown={handleClear}
@@ -109,7 +112,7 @@ export default function PlayerCombobox({
         )}
       </div>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <ul className="absolute left-1/2 top-full z-20 mt-1 max-h-56 w-56 -translate-x-1/2 overflow-y-auto rounded-lg border border-ink/10 bg-white text-left shadow-lg">
           {results.length === 0 && (
             <li className="px-3 py-2 text-xs text-ink/50">Aucun joueur trouvé</li>

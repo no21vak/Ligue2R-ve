@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   BENCH_SLOT_OFFSET,
   BENCH_STRUCTURE,
@@ -19,6 +19,8 @@ interface Props {
   players: PlayerRow[];
   existingLineup?: ExistingLineup;
   username: string;
+  isLocked: boolean;
+  lockAt: string | null;
 }
 
 const POSITION_LABEL: Record<Position, string> = {
@@ -62,7 +64,19 @@ export default function CompositionBuilder({
   players,
   existingLineup,
   username,
+  isLocked: isLockedFromServer,
+  lockAt,
 }: Props) {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (isLockedFromServer || !lockAt) return; // déjà verrouillé, ou pas d'heure précise à surveiller
+    const interval = setInterval(() => setNow(new Date()), 15_000);
+    return () => clearInterval(interval);
+  }, [isLockedFromServer, lockAt]);
+
+  const isLocked = isLockedFromServer || (lockAt !== null && now >= new Date(lockAt));
+
   const [formationKey, setFormationKey] = useState(existingLineup?.formation ?? DEFAULT_FORMATION);
   const [slots, setSlots] = useState<SlotState[]>(() => buildSlots(formationKey, existingLineup));
   const [isPending, startTransition] = useTransition();
@@ -85,6 +99,7 @@ export default function CompositionBuilder({
   }, [slots, playerById]);
 
   function handleFormationChange(newKey: string) {
+    if (isLocked) return;
     const newFormation = FORMATIONS[newKey];
     setFormationKey(newKey);
     setSlots((prev) => {
@@ -104,6 +119,7 @@ export default function CompositionBuilder({
   }
 
   function handleSlotChange(slotId: string, playerId: number | null) {
+    if (isLocked) return;
     setSlots((prev) => prev.map((s) => (s.id === slotId ? { ...s, playerId } : s)));
     setFeedback(null);
   }
@@ -157,17 +173,25 @@ export default function CompositionBuilder({
               {username} · {gameweekLabel}
             </p>
           </div>
-          <select
-            value={formationKey}
-            onChange={(e) => handleFormationChange(e.target.value)}
-            className="rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm font-semibold"
-          >
-            {Object.values(FORMATIONS).map((f) => (
-              <option key={f.key} value={f.key}>
-                {f.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-3">
+            {isLocked && (
+              <span className="rounded-full bg-clay/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-clay">
+                Verrouillée
+              </span>
+            )}
+            <select
+              value={formationKey}
+              onChange={(e) => handleFormationChange(e.target.value)}
+              disabled={isLocked}
+              className="rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {Object.values(FORMATIONS).map((f) => (
+                <option key={f.key} value={f.key}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </header>
 
@@ -190,6 +214,7 @@ export default function CompositionBuilder({
                 onChange={(playerId) => handleSlotChange(slot.id, playerId)}
                 placeholder={`— ${POSITION_LABEL[slot.position]} —`}
                 variant="pitch"
+                disabled={isLocked}
               />
             </div>
           ))}
@@ -213,6 +238,7 @@ export default function CompositionBuilder({
                   onChange={(playerId) => handleSlotChange(slot.id, playerId)}
                   placeholder="—"
                   variant="bench"
+                  disabled={isLocked}
                 />
               </div>
             ))}
@@ -223,21 +249,40 @@ export default function CompositionBuilder({
       {/* Barre d'action fixe */}
       <div className="fixed inset-x-0 bottom-0 border-t border-ink/10 bg-white/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
-          <div className="text-sm text-ink/70">
-            <span className="font-semibold text-ink">{filledCount}/18</span> postes remplis
-            {feedback && (
-              <p className={feedback.type === "error" ? "text-clay" : "text-pitch-dark"}>
-                {feedback.message}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={isPending || filledCount !== 18}
-            className="rounded-lg bg-pitch px-5 py-3 text-sm font-semibold text-chalk transition hover:bg-pitch-dark disabled:opacity-40"
-          >
-            {isPending ? "Enregistrement..." : "Enregistrer ma compo"}
-          </button>
+          {isLocked ? (
+            <p className="text-sm text-ink/70">
+              🔒 La journée a débuté, ta composition est figée jusqu'à la prochaine.
+            </p>
+          ) : (
+            <div className="text-sm text-ink/70">
+              <span className="font-semibold text-ink">{filledCount}/18</span> postes remplis
+              {lockAt && (
+                <p className="text-xs text-ink/50">
+                  Verrouillage automatique le{" "}
+                  {new Date(lockAt).toLocaleString("fr-FR", {
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              )}
+              {feedback && (
+                <p className={feedback.type === "error" ? "text-clay" : "text-pitch-dark"}>
+                  {feedback.message}
+                </p>
+              )}
+            </div>
+          )}
+          {!isLocked && (
+            <button
+              onClick={handleSave}
+              disabled={isPending || filledCount !== 18}
+              className="rounded-lg bg-pitch px-5 py-3 text-sm font-semibold text-chalk transition hover:bg-pitch-dark disabled:opacity-40"
+            >
+              {isPending ? "Enregistrement..." : "Enregistrer ma compo"}
+            </button>
+          )}
         </div>
       </div>
     </main>

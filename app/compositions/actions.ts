@@ -48,6 +48,12 @@ export async function saveLineup(
   });
 
   if (error) {
+    if (error.message.includes("GAMEWEEK_LOCKED")) {
+      return {
+        success: false,
+        error: "La journée a débuté (ou a été verrouillée), tu ne peux plus modifier ta composition.",
+      };
+    }
     // La contrainte "un joueur par club" (lineup_slots_lineup_id_club_id_key)
     // est appliquée par la base ; si elle se déclenche ici, c'est qu'il reste
     // un bug côté filtre client plutôt qu'une vraie tentative invalide.
