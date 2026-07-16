@@ -14,6 +14,7 @@ export interface PlayerRow {
   last_name: string;
   jersey_number: number | null;
   photo_url: string | null;
+  is_active: boolean;
   positions: Position[];
 }
 

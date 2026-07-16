@@ -17,9 +17,15 @@ values (
   '2026-07-25',                   -- date du premier match
   '2026-07-27',                   -- date du dernier match
   'open',
-  '2026-07-25 15:00:00+02'        -- heure précise du coup d'envoi (fuseau Paris, +02 en été / +01 en hiver)
+  '2026-07-25 15:00:00' at time zone 'Europe/Paris'  -- coup d'envoi en heure de Paris
 );
 ```
+
+⚠️ **Ne jamais écrire un décalage fixe du style `+02` à la main** : la France
+alterne entre UTC+1 (hiver) et UTC+2 (été, heure d'été), et un décalage en dur
+décale silencieusement le verrouillage d'une heure une fois le changement
+d'heure passé. La syntaxe `at time zone 'Europe/Paris'` ci-dessus laisse
+Postgres calculer le bon décalage automatiquement, été comme hiver.
 
 Dès que cette ligne existe avec `status = 'open'`, l'écran de composition
 bascule automatiquement dessus pour tout le monde — l'appli va chercher la

@@ -40,6 +40,7 @@ export default function PlayerCombobox({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selected = value ? players.find((p) => p.id === value) : undefined;
+  const isSelectedInactive = selected?.is_active === false;
 
   const results = useMemo(() => {
     const q = normalize(query.trim());
@@ -71,7 +72,7 @@ export default function PlayerCombobox({
   const displayValue = isOpen
     ? query
     : selected
-      ? playerLabel(selected, clubById.get(selected.club_id))
+      ? playerLabel(selected, clubById.get(selected.club_id)) + (isSelectedInactive ? " ⚠" : "")
       : "";
 
   const isPitch = variant === "pitch";
@@ -83,7 +84,7 @@ export default function PlayerCombobox({
           isPitch
             ? `w-32 px-2 py-1 ${value ? "border-gold bg-white" : "border-white/70 bg-white/90"}`
             : `w-full rounded-lg border px-2 py-2 ${value ? "border-pitch/40 bg-white" : "border-ink/15 bg-white"}`
-        } ${disabled ? "opacity-70" : ""}`}
+        } ${isSelectedInactive ? "!border-clay" : ""} ${disabled ? "opacity-70" : ""}`}
       >
         <input
           ref={inputRef}
@@ -97,7 +98,9 @@ export default function PlayerCombobox({
           onBlur={() => setTimeout(() => setIsOpen(false), 150)}
           placeholder={placeholder}
           className={`w-full truncate bg-transparent text-center outline-none disabled:cursor-not-allowed ${
-            isPitch ? "text-xs font-semibold text-ink" : "text-xs font-medium text-ink"
+            isSelectedInactive ? "text-clay" : ""
+          } ${isPitch ? "text-xs font-semibold" : "text-xs font-medium"} ${
+            isSelectedInactive ? "" : "text-ink"
           }`}
         />
         {value && !disabled && (

@@ -22,6 +22,7 @@ export default async function CompositionsPage() {
     .from("league_members")
     .select("league_id, leagues(id, name)")
     .eq("user_id", user.id)
+    .order("league_id", { ascending: true })
     .limit(1)
     .maybeSingle();
 
@@ -53,8 +54,7 @@ export default async function CompositionsPage() {
     supabase.from("clubs").select("id, name, short_name, logo_url").order("name"),
     supabase
       .from("players")
-      .select("id, club_id, first_name, last_name, jersey_number, photo_url, player_positions(position)")
-      .eq("is_active", true),
+      .select("id, club_id, first_name, last_name, jersey_number, photo_url, is_active, player_positions(position)"),
     supabase
       .from("lineups")
       .select("formation, id")
@@ -80,6 +80,7 @@ export default async function CompositionsPage() {
     last_name: p.last_name,
     jersey_number: p.jersey_number,
     photo_url: p.photo_url,
+    is_active: p.is_active,
     positions: (p.player_positions ?? []).map((pp: any) => pp.position),
   }));
 

@@ -39,6 +39,19 @@ export async function saveLineup(
     return { success: false, error: "Un même joueur ne peut occuper qu'un seul poste." };
   }
 
+  const { data: inactivePlayers } = await supabase
+    .from("players")
+    .select("id")
+    .in("id", clubIds)
+    .eq("is_active", false);
+
+  if (inactivePlayers && inactivePlayers.length > 0) {
+    return {
+      success: false,
+      error: "Un ou plusieurs joueurs sélectionnés ne sont plus disponibles, remplace-les avant d'enregistrer.",
+    };
+  }
+
   const { error } = await supabase.rpc("save_lineup", {
     p_user_id: user.id,
     p_league_id: input.leagueId,

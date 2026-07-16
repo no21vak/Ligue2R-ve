@@ -127,6 +127,7 @@ export default function CompositionBuilder({
   function availablePlayersFor(slot: SlotState) {
     return players
       .filter((p) => p.positions.includes(slot.position))
+      .filter((p) => p.is_active || p.id === slot.playerId)
       .filter((p) => !usedClubIds.has(p.club_id) || p.id === slot.playerId)
       .sort((a, b) => {
         const clubA = clubById.get(a.club_id)?.name ?? "";
@@ -160,6 +161,10 @@ export default function CompositionBuilder({
   const starters = slots.filter((s) => s.isStarter);
   const bench = slots.filter((s) => !s.isStarter);
   const filledCount = slots.filter((s) => s.playerId).length;
+  const inactiveSlotsCount = slots.filter(
+    (s) => s.playerId && playerById.get(s.playerId)?.is_active === false
+  ).length;
+  const canSave = filledCount === 18 && inactiveSlotsCount === 0;
 
   return (
     <main className="min-h-screen bg-chalk pb-32">
@@ -256,6 +261,13 @@ export default function CompositionBuilder({
           ) : (
             <div className="text-sm text-ink/70">
               <span className="font-semibold text-ink">{filledCount}/18</span> postes remplis
+              {inactiveSlotsCount > 0 && (
+                <p className="text-clay">
+                  {inactiveSlotsCount} joueur{inactiveSlotsCount > 1 ? "s" : ""} sélectionné
+                  {inactiveSlotsCount > 1 ? "s" : ""} ne {inactiveSlotsCount > 1 ? "sont" : "l'est"} plus
+                  disponible{inactiveSlotsCount > 1 ? "s" : ""} — remplace-{inactiveSlotsCount > 1 ? "les" : "le"} avant d'enregistrer.
+                </p>
+              )}
               {lockAt && (
                 <p className="text-xs text-ink/50">
                   Verrouillage automatique le{" "}
@@ -277,7 +289,7 @@ export default function CompositionBuilder({
           {!isLocked && (
             <button
               onClick={handleSave}
-              disabled={isPending || filledCount !== 18}
+              disabled={isPending || !canSave}
               className="rounded-lg bg-pitch px-5 py-3 text-sm font-semibold text-chalk transition hover:bg-pitch-dark disabled:opacity-40"
             >
               {isPending ? "Enregistrement..." : "Enregistrer ma compo"}
