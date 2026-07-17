@@ -28,7 +28,7 @@ begin
 
   select gw.id, gw.number into v_last_gameweek_id, v_last_gameweek_number
   from gameweeks gw
-  where gw.status in ('locked', 'completed')
+  where gw.status <> 'open' or (gw.lock_at is not null and now() >= gw.lock_at)
   order by gw.number desc
   limit 1;
 
@@ -42,7 +42,7 @@ begin
       join gameweeks gw on gw.id = l.gameweek_id
       where l.user_id = u.id
       and l.league_id = p_league_id
-      and gw.status in ('locked', 'completed')
+      and (gw.status <> 'open' or (gw.lock_at is not null and now() >= gw.lock_at))
     ), 0) as cumulative_points,
     v_last_gameweek_id as last_gameweek_id,
     v_last_gameweek_number as last_gameweek_number,
