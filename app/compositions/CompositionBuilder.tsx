@@ -9,6 +9,7 @@ import {
 } from "@/lib/formations";
 import { saveLineup } from "./actions";
 import PlayerCombobox from "./PlayerCombobox";
+import Link from "next/link";
 import type { Club, ExistingLineup, PlayerRow, Position, SlotState } from "@/lib/types";
 
 interface Props {
@@ -179,6 +180,9 @@ export default function CompositionBuilder({
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/classement" className="text-sm font-medium text-pitch-dark underline">
+              Classement
+            </Link>
             {isLocked && (
               <span className="rounded-full bg-clay/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-clay">
                 Verrouillée
